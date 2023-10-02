@@ -5,7 +5,7 @@ import pandas as pd
 
 class NaverFinance:
     @classmethod    
-    def get_etf_item_list(cls, market_cap=0, *kwds) -> pd.DataFrame:
+    def get_etf_item_list(cls, market_cap=0, *exclude_kwds) -> pd.DataFrame:
         '''네이버 증권에 ETF 리스트 데이터 요청'''
         # 데이터 요청
         URL = 'https://finance.naver.com/api/sise/etfItemList.nhn'
@@ -28,9 +28,9 @@ class NaverFinance:
             '현재가': int, '등락률': float, 'NAV': int, '3개월수익률': float,
             '거래량': int, '거래대금': int, '시가총액': int,
         }).set_index('종목코드')
-        if kwds:
+        if exclude_kwds:
             df = df.query(' and '.join(f'not 종목명.str.contains("{kwd}")'
-                                       for kwd in kwds))
+                                       for kwd in exclude_kwds))
         return df.query(f'시가총액 >= {market_cap}')
 
 if __name__ == '__main__':

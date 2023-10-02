@@ -24,7 +24,7 @@ class KISTrading:
         try:
             res = requests.post(URL, json=json)
             if res.status_code != 200:
-                err_msg = f'Request Error ({res.status_code}) : {res.content}'
+                err_msg = f'Request Error ({res.status_code}) : {res.text}'
                 raise Exception(err_msg)
             access_token = res.json()['access_token']
             return access_token
@@ -46,7 +46,7 @@ class KISTrading:
         return dict(CANO=self.CANO,
                     ACNT_PRDT_CD=self.ACNT_PRDT_CD)
 
-    def get_account_balance(self) -> pd.DataFrame:
+    def get_account_balance(self, simple=True) -> pd.DataFrame:
         '''
         #### 투자계좌 자산현황 조회
         '매입금액'(0), '평가금액'(1), '평가손익금액'(2),
@@ -63,7 +63,7 @@ class KISTrading:
                                     headers=self.get_headers('CTRP6548R'))
             if res.status_code != 200:
                 print(res.json())
-                err_msg = f'Request Error ({res.status_code}) : {res.content}'
+                err_msg = f'Request Error ({res.status_code}) : {res.text}'
                 raise Exception(err_msg)
             data = res.json()
             columns = ['매입금액', '평가금액', '평가손익금액',
@@ -76,7 +76,8 @@ class KISTrading:
                 '금현물', 'CD/CP', '단기사채', '타사상품', '외화단기사채',
                 '외화 ELS/DLS', '외화', '예수금+CMA', '청약자예수금', '<합계>']
             df = df.astype('float')
-            return df
+            return df.loc[df.전체비중율 > 0]\
+                .iloc[:, [0, 1, 2, 4, 5]] if simple else df
         except Exception as ex:
             print(type(ex), ex)
 
@@ -101,7 +102,7 @@ class KISTrading:
                                     headers=self.get_headers('TTTC8434R'))
             if res.status_code != 200:
                 print(res.json())
-                err_msg = f'Request Error ({res.status_code}) : {res.content}'
+                err_msg = f'Request Error ({res.status_code}) : {res.text}'
                 raise Exception(err_msg)
             data = res.json()
             df = pd.DataFrame(data['output1'],)
@@ -119,3 +120,17 @@ class KISTrading:
                     .loc[df.보유수량 > 0] if simple else df
         except Exception as ex:
             print(type(ex), ex)
+
+if __name__ == '__main__':
+    import os
+
+    trading = KISTrading(
+        os.getenv('appkey'),
+        os.getenv('appsecret'),
+        os.getenv('CANO'),
+        os.getenv('ACNT_PRDT_CD'))
+    
+    account_balance = trading.get_account_balance()
+    print(account_balance)
+    stock_account = trading.get_stock_account()
+    print(stock_account)
