@@ -3,7 +3,7 @@
 #!/bin/bash
 
 # 입력 문자열
-current_version=$(cat "owlman/__init__.py" | grep -o -E "\d.\d.\d")
+current_version=$(cat "owlman/__init__.py" | grep -o -E "(\d+)\.(\d+)\.(\d+)")
 echo "PREV : $current_version"
 
 # '.'을 기준으로 문자열을 분리
