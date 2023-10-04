@@ -8,7 +8,7 @@ setup(
     author='qus0in',
     author_email='qus0in@gmail.com',
     url='https://github.com/qus0in/owlman',
-    install_requires=['requests', 'pandas',],
+    install_requires=['requests', 'pandas', 'plotly', 'scikit-learn'],
     packages=find_packages(exclude=[]),
     keywords=['owlman'],
     python_requires='>=3.6',
