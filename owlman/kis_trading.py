@@ -29,7 +29,7 @@ class KISTrading:
         try:
             res = requests.post(URL, json=json)
             if res.status_code != 200:
-                err_msg = f'Request Error ({res.status_code}) : {res.content}'
+                err_msg = f'Request Error ({res.status_code}) : {res.text}'
                 raise Exception(err_msg)
             access_token = res.json()['access_token']
             return access_token
@@ -69,7 +69,7 @@ class KISTrading:
                                     headers=self.get_headers('CTRP6548R'))
             if res.status_code != 200:
                 print(res.json())
-                err_msg = f'Request Error ({res.status_code}) : {res.content}'
+                err_msg = f'Request Error ({res.status_code}) : {res.text}'
                 raise Exception(err_msg)
             data = res.json()
             columns = ['매입금액', '평가금액', '평가손익금액',
@@ -147,11 +147,13 @@ class KISTrading:
                 '영업일자', '시가', '고가', '저가', '종가', '거래량',
                 '전일대비거래량비율', '전일대비', '전일대비부호', '전일대비율',
                 '외국인소진율', '외국인순매수', '락구분코드', '누적분할비율']
+            df['영업일자'] = pd.to_datetime(df['영업일자'], format='%Y%m%d')
             df.set_index('영업일자', inplace=True)
             df = df.astype({
                 '시가': int, '고가': int, '저가': int, '종가': int,
                 '전일대비거래량비율': float, '전일대비': int, '전일대비율': float,
-                '외국인소진율': float, '외국인순매수': int, '누적분할비율': float})
+                '외국인소진율': float, '외국인순매수': int, '누적분할비율': float})\
+                .sort_index()
             return df
         except Exception as ex:
             print(type(ex), ex)
@@ -224,7 +226,7 @@ class KISTrading:
                 'N' if CTX_AREA_FK100 else ''))
             if res.status_code != 200:
                 print(res.json())
-                err_msg = f'Request Error ({res.status_code}) : {res.content}'
+                err_msg = f'Request Error ({res.status_code}) : {res.text}'
                 raise Exception(err_msg)
             data = res.json()
             ctx_area_fk100 = data.get('ctx_area_fk100')
@@ -257,11 +259,14 @@ class KISTrading:
 if __name__ == '__main__':
     import os
 
+    print('KISTrading')
+
     trading = KISTrading(
         os.getenv('appkey'),
         os.getenv('appsecret'),
         os.getenv('CANO'),
-        os.getenv('ACNT_PRDT_CD'))
+        os.getenv('ACNT_PRDT_CD')
+    )
     
     account_balance = trading.get_account_balance()
     print(account_balance)
