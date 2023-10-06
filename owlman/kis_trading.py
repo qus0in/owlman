@@ -370,7 +370,7 @@ class TradingHelper:
                     for group in self.data_group]
         for i, v in enumerate(group_df):
             v['그룹'] = i + 1
-        return pd.concat(group_df)
+        return pd.concat(group_df).iloc[:, [1, 0]]
 
     @classmethod
     def get_score(cls, close_price):
