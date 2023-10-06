@@ -30,6 +30,7 @@ esac
 
 echo "__version__ = '$new_version'"  > "owlman/__init__.py"
 
+source venv/bin/activate
 pip freeze > requirements.txt
 python setup.py sdist bdist_wheel
 python -m twine upload dist/*
