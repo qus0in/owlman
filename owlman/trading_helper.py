@@ -1,6 +1,5 @@
 import time
 from multiprocessing import Pool, cpu_count
-from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -9,10 +8,6 @@ from sklearn.cluster import AgglomerativeClustering
 import plotly.express as px
 
 from owlman.kis_trading import KISTrading
-
-class CorrelationType(Enum):
-    Close = 'Close'
-    TR = 'TR'
 
 class TradingHelper:
     periods = [2, 3, 5, 8, 13, 21]
@@ -59,7 +54,7 @@ class TradingHelper:
             prices = p.map(self.get_price, self.universe.index)
         p.join();
         print(f'Pool({cpu_count() * 2}) : {time.time() - start_time : .2f} seconds')
-        self.history : dict = {k : v for k, v in prices}
+        self.history : pd.DataFrame = {k : v for k, v in prices}
     
     @classmethod
     def get_tr(cls, df: pd.DataFrame, close_col, high_col, low_col):
@@ -79,33 +74,24 @@ class TradingHelper:
             .tail(max(self.periods))
         volitality.columns = tr_dict.keys()
         self.volitality : pd.DataFrame = volitality.copy()
-        # self.correlation : pd.DataFrame = volitality.corr()
-
-    def visualize_scatter(self,
-                     corr_type:str='TR',
+        self.correlation : pd.DataFrame = volitality.corr()
+    
+    def draw_scatter(self,
                      text='종목명', color='카테고리',
                      size='시가총액', size_max=100):
-        '''### 상관성 분석 시각화'''
+        '''### 상관성 분석 시각화 (복구)'''
         pca = PCA(2)
-        if corr_type == CorrelationType.TR.value:
-            correlation = self.volitality.corr()
-        elif corr_type == CorrelationType.Close.value:
-            closes = pd.concat([(k, v.종가) for k, v in self.history.items()], axis=1)\
-                .tail(max(self.periods))
-            correlation = closes.corr()
-        else:
-            correlation = self.volitality.corr()
-        components = pca.fit_transform(correlation)
-        corr_pca = pd.DataFrame(components, index=correlation.index)
+        components = pca.fit_transform(self.correlation)
+        corr_pca = pd.DataFrame(components, index=self.correlation.index)
         corr_pca[text] = [
                 self.universe.query(f"index == '{v}'").iloc[0][text]
-                    for v in correlation.index]
+                    for v in self.correlation.index]
         corr_pca[color] = [
                 self.universe.query(f"index == '{v}'").iloc[0][color]
-                    for v in correlation.index]
+                    for v in self.correlation.index]
         corr_pca[size] = [
                 self.universe.query(f"index == '{v}'").iloc[0][size]
-                    for v in correlation.index]
+                    for v in self.correlation.index]
         fig = px.scatter(corr_pca, x=0, y=1,
                         text=text, color=color, size=size,
                         size_max=size_max, height=525)
