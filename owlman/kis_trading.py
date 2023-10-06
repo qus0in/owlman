@@ -269,8 +269,7 @@ class TradingHelper:
     def __init__(self,
                  kis_client: KISTrading,
                  universe: pd.DataFrame=None,
-                 n_clusters=10,
-                 screen=4):
+                 n_clusters=10, screen=4, limit=0.015, buffer=1):
         
         self.kis_client : KISTrading = kis_client
         self.universe = universe
@@ -283,7 +282,7 @@ class TradingHelper:
         self.get_current_budget()
         self.get_volitality()
         self.get_data_group(n_clusters)
-        self.get_screen_table(screen)
+        self.get_screen_table(screen, limit, buffer)
     
     def get_current_account_balance(self):
         '''### 계좌 현황 조회'''
