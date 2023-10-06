@@ -39,4 +39,4 @@ git add .
 git commit -m "$new_version"
 git push
 
-echo "NEXT : $new_version"
+echo "NOW : $new_version"

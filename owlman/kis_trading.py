@@ -9,8 +9,6 @@ from sklearn.cluster import AgglomerativeClustering
 import plotly.express as px
 
 class KISTrading:
-    __version__ = '1.0.0'
-    
     '''https://apiportal.koreainvestment.com/apiservice/'''
     domain = 'https://openapi.koreainvestment.com:9443'
 
@@ -332,7 +330,7 @@ class TradingHelper:
         self.volitality : pd.DataFrame = volitality.copy()
         self.correlation : pd.DataFrame = volitality.corr()
 
-    def draw_scatter(self,
+    def draw_corr_scatter(self,
                      text='종목명', color='카테고리',
                      size='시가총액', size_max=100):
         '''### 상관성 분석 시각화'''

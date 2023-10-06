@@ -2,8 +2,6 @@ import requests
 import pandas as pd
 
 class NaverFinance:
-    __version__ = '1.0.0'
-
     @classmethod    
     def get_etf_item_list(cls, market_cap=0, exclude_category=[], exclude_kwds=[]) -> pd.DataFrame:
         '''네이버 증권에 ETF 리스트 데이터 요청'''
