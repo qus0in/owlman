@@ -10,13 +10,18 @@ import plotly.express as px
 from owlman.kis_trading import KISTrading
 
 class TradingHelper:
+    __version__ = '0.1.0'
+
     periods = [2, 3, 5, 8, 13, 21]
 
-    def __init__(self,
-                 kis_client: KISTrading,
-                 universe: pd.DataFrame=None,
-                 n_clusters=10,
-                 screen=4):
+    def __init__(
+            self,
+            kis_client: KISTrading,
+            universe: pd.DataFrame=None,
+            n_clusters=10,
+            screen=4,
+            limit=0.015,
+        ):
         
         self.kis_client : KISTrading = kis_client
         self.universe = universe
@@ -29,7 +34,7 @@ class TradingHelper:
         self.get_current_budget()
         self.get_volitality()
         self.get_data_group(n_clusters)
-        self.get_screen_table(screen)
+        self.get_screen_table(screen, limit)
     
     def get_current_account_balance(self):
         '''### 계좌 현황 조회'''
@@ -79,7 +84,7 @@ class TradingHelper:
     def draw_scatter(self,
                      text='종목명', color='카테고리',
                      size='시가총액', size_max=100):
-        '''### 상관성 분석 시각화 (복구)'''
+        '''### 상관성 분석 시각화'''
         pca = PCA(2)
         components = pca.fit_transform(self.correlation)
         corr_pca = pd.DataFrame(components, index=self.correlation.index)

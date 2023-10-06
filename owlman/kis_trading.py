@@ -9,6 +9,8 @@ from sklearn.cluster import AgglomerativeClustering
 import plotly.express as px
 
 class KISTrading:
+    __version__ = '1.0.0'
+    
     '''https://apiportal.koreainvestment.com/apiservice/'''
     domain = 'https://openapi.koreainvestment.com:9443'
 
