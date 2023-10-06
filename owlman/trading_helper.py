@@ -81,7 +81,7 @@ class TradingHelper:
         self.volitality : pd.DataFrame = volitality.copy()
         # self.correlation : pd.DataFrame = volitality.corr()
 
-    def draw_scatter(self,
+    def visualize_scatter(self,
                      corr_type:str='TR',
                      text='종목명', color='카테고리',
                      size='시가총액', size_max=100):
