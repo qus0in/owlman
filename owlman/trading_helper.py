@@ -1,6 +1,6 @@
 import time
 from multiprocessing import Pool, cpu_count
-from enum import Enum, auto
+from enum import Enum
 
 import numpy as np
 import pandas as pd

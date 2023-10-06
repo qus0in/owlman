@@ -31,6 +31,8 @@ esac
 echo "__version__ = '$new_version'"  > "owlman/__init__.py"
 
 pip freeze > requirements.txt
+rm -rf build
+rm -rf dist
 python setup.py sdist bdist_wheel
 python -m twine upload dist/*
 git add .
