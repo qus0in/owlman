@@ -74,24 +74,26 @@ class TradingHelper:
             .tail(max(self.periods))
         volitality.columns = tr_dict.keys()
         self.volitality : pd.DataFrame = volitality.copy()
-        self.correlation : pd.DataFrame = volitality.corr()
+        # self.correlation : pd.DataFrame = volitality.corr()
 
     def draw_scatter(self,
+                     correlation = None,
                      text='종목명', color='카테고리',
                      size='시가총액', size_max=100):
         '''### 상관성 분석 시각화'''
         pca = PCA(2)
-        components = pca.fit_transform(self.correlation)
-        corr_pca = pd.DataFrame(components, index=self.correlation.index)
+        correlation = correlation or self.volitality.corr()
+        components = pca.fit_transform(correlation)
+        corr_pca = pd.DataFrame(components, index=correlation.index)
         corr_pca[text] = [
                 self.universe.query(f"index == '{v}'").iloc[0][text]
-                    for v in self.correlation.index]
+                    for v in correlation.index]
         corr_pca[color] = [
                 self.universe.query(f"index == '{v}'").iloc[0][color]
-                    for v in self.correlation.index]
+                    for v in correlation.index]
         corr_pca[size] = [
                 self.universe.query(f"index == '{v}'").iloc[0][size]
-                    for v in self.correlation.index]
+                    for v in correlation.index]
         fig = px.scatter(corr_pca, x=0, y=1,
                         text=text, color=color, size=size,
                         size_max=size_max, height=525)
