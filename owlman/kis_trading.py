@@ -408,7 +408,7 @@ class TradingHelper:
             if x.버퍼 and x.보유:
                 return x.진입
             if x.버퍼 and len(df_scores[df_scores.버퍼 & df_scores.보유]) != screen\
-                and df_scores.iloc[screen - 1].점수 == x.점수:
+                and df_scores.iloc[screen - 1].점수 >= x.점수:
                 return x.진입
             return 0
         df_scores['진입'] = df_scores.apply(enter, axis=1)
