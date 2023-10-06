@@ -386,7 +386,7 @@ class TradingHelper:
         atr = tr.ewm(max(cls.periods)).mean().iloc[-1]
         return atr / c
     
-    def get_screen_table(self, screen, limit=0.015):
+    def get_screen_table(self, screen, limit=0.015, buffer=1):
         '''진입 테이블 작성'''
         scores = [[[v[0], v[1],
                     self.get_score(self.history[v[0]].종가),
@@ -398,7 +398,7 @@ class TradingHelper:
         df_scores.columns = ['그룹', '종목코드', '종목명', '점수', '위험']
         df_scores.set_index('종목코드', inplace=True)
         df_scores.sort_values('점수', ascending=False, inplace=True)
-        df_scores['버퍼'] = [(s > 1) and (s >= df_scores.점수.iloc[screen])
+        df_scores['버퍼'] = [(s > 1) and (s >= df_scores.점수.iloc[screen - 1 + buffer])
                             for s in df_scores.점수 ]
         df_scores['보유'] = [any([s in [d[0] for d in self.data_group[i]]
                             for s in self.current_stock.index]) for i in df_scores.그룹]
