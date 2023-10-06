@@ -11,8 +11,8 @@ import plotly.express as px
 from owlman.kis_trading import KISTrading
 
 class CorrelationType(Enum):
-    Close = 'close'
-    TR = 'tr'
+    Close = 'Close'
+    TR = 'TR'
 
 class TradingHelper:
     periods = [2, 3, 5, 8, 13, 21]
@@ -82,14 +82,14 @@ class TradingHelper:
         # self.correlation : pd.DataFrame = volitality.corr()
 
     def draw_scatter(self,
-                     corr_type=CorrelationType.TR|str,
+                     corr_type:str='TR',
                      text='종목명', color='카테고리',
                      size='시가총액', size_max=100):
         '''### 상관성 분석 시각화'''
         pca = PCA(2)
-        if corr_type == CorrelationType.TR:
+        if corr_type == CorrelationType.TR.value:
             correlation = self.volitality.corr()
-        elif corr_type == CorrelationType.Close:
+        elif corr_type == CorrelationType.Close.value:
             closes = pd.concat([(k, v.종가) for k, v in self.history.items()], axis=1)\
                 .tail(max(self.periods))
             correlation = closes.corr()
