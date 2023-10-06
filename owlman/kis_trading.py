@@ -360,6 +360,17 @@ class TradingHelper:
         self.data_group = [[(i, self.universe.loc[i].종목명)
                 for i in self.correlation.index[labels == label]]
                 for label in np.unique(labels)]
+    
+    def get_data_group_table(self):
+        '''
+        ### 종목 그룹 DF화
+        '''
+        group_df = [pd.DataFrame(group,
+                                 columns=['종목코드', '종목명']).set_index('종목코드')
+                    for group in self.data_group]
+        for i, v in enumerate(group_df):
+            v['그룹'] = i + 1
+        return pd.concat(group_df)
 
     @classmethod
     def get_score(cls, close_price):
