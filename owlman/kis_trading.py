@@ -404,15 +404,21 @@ class TradingHelper:
         df_scores['진입'] = df_scores.위험.apply(lambda x: min(limit / x, 1))\
             .apply(lambda x: x * self.current_budget / screen)\
             .apply(lambda x: int(x // 100000) * 100000)
+        new_candidate = screen - len(df_scores[df_scores.버퍼 & df_scores.보유])
+        own = sum(df_scores['보유'])
+        print(f'own: {own}, new_candidate : {new_candidate}')
         def enter(x):
             if x.버퍼 and x.보유:
                 return x.진입
-            if x.버퍼 and len(df_scores[df_scores.버퍼 & df_scores.보유]) != screen\
-                and df_scores.iloc[screen - 1].점수 >= x.점수:
+            if new_candidate and x.점수\
+                > df_scores.iloc[own + new_candidate].점수:
                 return x.진입
             return 0
         df_scores['진입'] = df_scores.apply(enter, axis=1)
         df_scores['보유'] = df_scores['보유'].apply(lambda x: '✅' if x else '🔘')
-        df_scores.drop(columns=['그룹', '위험', '버퍼'], inplace=True)
+        df_scores['그룹'] += 1 # 0 시작 -> 1 시작
+        df_scores['위험'] = df_scores['위험'].apply(lambda x: int(x * 10000) / 100)
+        df_scores['점수'] = df_scores['점수'].apply(lambda x: int(x * 1000) / 1000)
+        df_scores.drop(columns=['버퍼'], inplace=True)
         print(df_scores.진입.sum())
         self.screen_table = df_scores.copy()
