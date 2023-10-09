@@ -51,8 +51,9 @@ class BondHelper:
         response = requests.post(URL, json=self.pd_no_json)
         data = response.json()
         body = data.get('body')
-        # print(body)
-        self.current_price = float(body.get('tr1').get('현재가'))
+        # 만기 시 시세정보 대응
+        self.current_price = float(
+            body.get('tr1').get('현재가')) if body else 1000
 
     @classmethod
     def cal_fee(cls, timedelta):
@@ -66,48 +67,60 @@ class BondHelper:
     def get_interest_between(self, start_dt, end_dt, tax=False):
         '''### 기간 이자 계산'''
         return self.profit.query(
-            f'"{start_dt}" <= index <= "{end_dt}"')\
+            f'"{start_dt}" < index <= "{end_dt}"')\
             .세전지급금액.sum() * ((1 - 0.154) if tax else 1)
 
     @classmethod
-    def get_trade_record(cls, buy, sell):
+    def get_trade_record(cls, buy, sell, tax=False):
         '''매매 기록 조회'''
         detail = cls(buy.iloc[0].상품번호)
+        today = datetime.now().date()
         sell.reset_index(inplace=True)
+        m = pd.merge(buy, sell, on='상품번호')\
+            if len(sell) else pd.merge(buy, sell, on='상품번호', how='outer')
+        m['매수수수료'] = m.평균단가_x * m.주문일자_x.apply(
+            lambda x: cls.cal_fee((detail.expire_date - x.date())))
         if len(sell):
-            m = pd.merge(buy, sell, on='상품번호')
-            m['매수수수료'] = m.평균단가_x * m.주문일자_x.apply(
-                lambda x: cls.cal_fee((detail.expire_date - x.date())))
             m['매도수수료'] = m.평균단가_y * m.주문일자_y.apply(
                 lambda x: cls.cal_fee((detail.expire_date - x.date())))
             m['예상이표수익'] = m.apply(
               lambda x: detail.get_interest_between(
-                x.주문일자_x, x.주문일자_y) / x.총체결수량_x, axis=1)
+                x.주문일자_x, x.주문일자_y, tax) / 10, axis=1)
             m['예상매매수익'] = m.평균단가_y + m.예상이표수익 - m.평균단가_x - m.매수수수료 - m.매도수수료
             m['예상매매수익률'] = m.예상매매수익 / m.평균단가_x * 365\
                 / (m.주문일자_y - m.주문일자_x).apply(lambda x: x.days) * 100
         else:
-            m = pd.merge(buy, sell, on='상품번호', how='outer')
-            m['매수수수료'] = m.평균단가_x * m.주문일자_x.apply(
-                lambda x: cls.cal_fee((detail.expire_date - x.date())))
             m['매도수수료'] = 0
             m['예상이표수익'] = m.apply(
               lambda x: detail.get_interest_between(
-                x.주문일자_x, datetime.now().date()) / x.총체결수량_x, axis=1)
-            m['예상매매수익'] = 0
-            m['예상매매수익률'] = 0
+                x.주문일자_x, today, tax) / 10, axis=1)
+            if detail.expire_date < today: # 만기상환 시
+                m.평균단가_y = 1000
+                m.주문일자_y = detail.expire_date
+                m['예상매매수익'] = m.평균단가_y + m.예상이표수익 - m.평균단가_x - m.매수수수료
+                m['예상매매수익률'] = m.apply(
+                    lambda x: x.예상매매수익 / x.평균단가_x *365\
+                    / (x.주문일자_y - x.주문일자_x.date()).days * 100, axis=1)
+            else:
+                m['예상매매수익'] = 0
+                m['예상매매수익률'] = 0
+        m['만기일'] = detail.expire_date
 
         # print(m.keys())
         result = m.sort_values('예상매매수익률', ascending=False).copy()\
                 .iloc[[0]]\
-                .loc[:, ['상품번호', '상품명_x', '총체결수량_x',
+                .loc[:, ['상품번호', '상품명_x', '만기일', '총체결수량_x',
                             '주문일자_x', '평균단가_x',
                             '유일주문코드', '주문일자_y', '평균단가_y',
                             '예상이표수익', '예상매매수익', '예상매매수익률',]]
-        result.columns = ['상품번호', '상품명', '보유수량',
+        result.columns = ['상품번호', '상품명', '만기일', '보유수량',
                             '매수일자', '매수단가',
                             '매도주문코드', '매도일자', '매도단가',
                             '이표수익', '매매수익', '매매수익률',]
+        try:
+            result['매도일자'] = result['매도일자'].apply(lambda x: x.date())
+        except:
+            pass
         return result
     
     @classmethod
@@ -122,7 +135,7 @@ class BondHelper:
         return buy_bond, sell_bond
     
     @classmethod
-    def get_merged_result(cls, buy_bond, sell_bond):
+    def get_merged_result(cls, buy_bond, sell_bond, tax=False):
         '''매수와 매도 기록 짝짓기'''
         records = []
         for i in range(len(buy_bond)):
@@ -131,7 +144,7 @@ class BondHelper:
                 f'상품번호 == "{b.iloc[0].상품번호}" &'\
                 f'주문일자 > "{b.iloc[0].주문일자.date()}" &'\
                 f'총체결수량 > 0')
-            r = cls.get_trade_record(b, s)
+            r = cls.get_trade_record(b, s, tax)
             if len(s) > 0:
                 sell_bond.loc[r.iloc[0].매도주문코드, '총체결수량'] -= r.iloc[0].보유수량
             records.append(r)
@@ -144,7 +157,10 @@ class BondHelper:
                          data : pd.DataFrame,
                          name: str = '',
                          price: float = None,
-                         screen: float = 0):
+                         screen: float = 0,
+                         sell_date: str = None,
+                         hold = False,
+                         tax = False):
         '''
         ### 매도 시 예상 수익률 계산
         `own = result.loc[result.매도일자.isnull()].copy()`
@@ -152,19 +168,30 @@ class BondHelper:
         df = data.copy()
         if name:
             df = df.loc[df.상품명 == name].copy()
-        if price:
-            price /= 10
-        df['매도일자'] = datetime.now()
-        df['매도단가'] = df.상품번호.apply(
-            lambda x: price or cls(x).current_price).div(10)
+        if hold: # 만기 보유 시
+            df['매도일자'] = df.상품번호.apply(
+                lambda x: datetime.fromordinal(
+                    cls(x).expire_date.toordinal()))
+            df['매도단가'] = 1000
+        else:
+            if sell_date: # 만기 보유 테스트를 위한 일자 지정
+                df['매도일자'] = datetime.strptime(sell_date, '%Y%m%d')     
+            else:
+                df['매도일자'] = datetime.now()
+            df['매도단가'] = df.상품번호.apply(
+                lambda x: price or cls(x).current_price).div(10)
         df['매수수수료'] = df.apply(
             lambda x: x.매수단가 * cls.cal_fee(
                 cls(x.상품번호).expire_date - x.매수일자.date()),
             axis=1)
         df['매도수수료'] = df.apply(
-            lambda x: x.매도단가 * cls.cal_fee(
+            lambda x: 0 if pd.Timestamp(x.만기일) <= pd.Timestamp(x.매도일자)\
+                else x.매도단가 * cls.cal_fee(
                 cls(x.상품번호).expire_date - x.매도일자.date()),
             axis=1)
+        df['이표수익'] = df.apply(
+              lambda x: cls(x.상품번호).get_interest_between(
+                x.매수일자, x.매도일자, tax) / 10, axis=1)
         df['매매수익'] = df.매도단가 + df.이표수익 - df.매수단가 - df.매수수수료 - df.매도수수료
         df['매매수익률'] = df.매매수익 / df.매수단가 * 365\
             / (df.매도일자 - df.매수일자).apply(lambda x: x.days) * 100
