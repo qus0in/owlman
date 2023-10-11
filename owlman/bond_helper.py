@@ -198,4 +198,4 @@ class BondHelper:
         df['매도일자'] = df['매도일자'].apply(lambda x: x.date()) 
         df.drop(columns=['매수수수료', '매도수수료'], inplace=True)
         result = df.sort_values('매매수익률', ascending=False).set_index('상품번호')
-        return result if price else result.query(f'매매수익률 > {screen}')
+        return result.query(f'매매수익률 > {screen}')
